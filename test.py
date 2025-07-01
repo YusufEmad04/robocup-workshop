@@ -1,52 +1,57 @@
-from controller import Robot, Camera, GPS 
+from controller import Robot
+import sys
+import struct
+import string
 import numpy as np
+from math import *
+import cv2 as cv
 
 robot = Robot()
-
-lidar = robot.getDevice("lidar")
-gps = robot.getDevice("gps")
-compass = robot.getDevice("inertial_unit")
-
-left_wheel = robot.getDevice("wheel2 motor")
-right_wheel = robot.getDevice("wheel1 motor")
-
 timestep = int(robot.getBasicTimeStep())
 
-lidar.enable(timestep)
+# Device initialization
+Camera1 = robot.getDevice("CamL")
+Camera2 = robot.getDevice("CamR")
+color_sensor = robot.getDevice("Color_Sensor")
+emitter = robot.getDevice("emitter")
+receiver = robot.getDevice("receiver")
+gps = robot.getDevice("gps")
+dis_sensor1 = robot.getDevice("Dis_Sen_Middle")
+dis_sensor2 = robot.getDevice("Dis_Sen_Right")
+dis_sensor3 = robot.getDevice("Dis_Sen_Left")
+dis_sensor4 = robot.getDevice("Dis_Sen_Right_Angle")
+dis_sensor5 = robot.getDevice("Dis_Sen_Left_Angle")
+wheelL = robot.getDevice("Wheel_Left motor")
+wheelR = robot.getDevice("Wheel_Right motor")
+IMU = robot.getDevice("imu")
+lid = robot.getDevice("lidar")
+
+# Enable all sensors
+receiver.enable(timestep)
+dis_sensor1.enable(timestep)
+dis_sensor2.enable(timestep)
+dis_sensor3.enable(timestep)
+dis_sensor4.enable(timestep)
+dis_sensor5.enable(timestep)
+Camera1.enable(timestep)
+Camera2.enable(timestep)
+IMU.enable(timestep)
+color_sensor.enable(timestep)
 gps.enable(timestep)
-compass.enable(timestep)
+lid.enable(timestep)
 
-left_wheel.setPosition(float('inf'))
-right_wheel.setPosition(float('inf'))
-
-gps_data = []
-compass_data = []
-lidarData = []
-
-def get_sensor_data():
-     global gps_data, compass_data, lidarData
-
-     gps_data = gps.getValues()
-     compass_data = compass.getRollPitchYaw()
-     lidarData = np.array(lidar.getRangeImage()).reshape(4, 512) * 100
-
-def stop():
-     steps = 160
-     while robot.step(timestep) != -1:
-          get_sensor_data()
-          left_wheel.setVelocity(0)
-          right_wheel.setVelocity(0)
-
-          steps -= 1
-
-          if steps == 0:
-               break
+# Motor configuration
+wheelL.setVelocity(0)
+wheelR.setVelocity(0)
+wheelL.setPosition(float("inf"))
+wheelR.setPosition(float("inf"))
 
 while robot.step(timestep) != -1:
-     get_sensor_data()
-
-     if lidarData[2][0] < 5:
-          stop()
-     else:
-          left_wheel.setVelocity(3)
-          right_wheel.setVelocity(3)
+    print("Front sensor value:", dis_sensor1.getValue())
+    front_sensor_value = dis_sensor1.getValue() * 100
+    if front_sensor_value < 10:
+        wheelL.setVelocity(-5)
+        wheelR.setVelocity(5)
+    else:
+        wheelL.setVelocity(5)
+        wheelR.setVelocity(5)
